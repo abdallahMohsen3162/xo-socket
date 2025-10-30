@@ -122,14 +122,41 @@ io.on("connection", (socket) => {
         io.to(mp.get(data.from)).emit("update", { G, flg: false });
     });
 
-    socket.on("disconnect", () => {
+       socket.on("disconnect", () => {
         console.log("Disconnected:", socket.id);
-        for (let [gameId, game] of games) {
-            if (game.players.includes(socket.id)) {
-                games.delete(gameId);
-                console.log(`Game ${gameId} removed due to player disconnect`);
+        
+        // Find and remove the user from mp
+        let disconnectedUserId = null;
+        for (let [userId, socketId] of mp) {
+            if (socketId === socket.id) {
+                disconnectedUserId = userId;
+                mp.delete(userId);
+                break;
             }
         }
+        
+        // Remove from st
+        st.delete(socket.id);
+        
+        // Clean up any games involving this user
+        for (let [gameId, game] of games) {
+            if (game.players.includes(disconnectedUserId)) {
+                games.delete(gameId);
+                console.log(`Game ${gameId} removed due to player disconnect`);
+                
+                // Notify the other player
+                let otherPlayer = game.players.find(p => p !== disconnectedUserId);
+                if (otherPlayer && mp.has(otherPlayer)) {
+                    io.to(mp.get(otherPlayer)).emit("opponentDisconnected");
+                }
+            }
+        }
+        
+        // Broadcast updated user list to all connected clients
+        let arr = Array.from(mp.keys());
+        io.emit("responseallusers", arr);
+        
+        console.log(`User ${disconnectedUserId} removed. Active users:`, arr.length);
     });
 });
 
