@@ -176,7 +176,7 @@ setInterval(() => {
     }).on("error", (err) => {
         console.error("Self-ping failed:", err.message);
     });
-}, 10 * 60 * 1000); // every 10 minutes
+}, 1 * 60 * 1000); // every 10 minutes
 
 // ====================================================
 // START SERVER
@@ -185,3 +185,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
